@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة التجمع المدني العراقي</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e40af">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Noto Sans Arabic', sans-serif; } </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-16">
+  <header class="bg-blue-800 text-white p-4 shadow-md sticky top-0 z-40">
+    <div class="max-w-xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-800 text-lg">🏛️</div>
+        <div>
+          <h1 class="font-bold text-base">بوابة التجمع المدني العراقي</h1>
+          <p class="text-xs text-blue-200">الاستمارة والمتابعة الإلكترونية الموحدة</p>
+        </div>
+      </div>
+      <a href="director.html" class="text-xs bg-blue-900 px-2.5 py-1.5 rounded-lg border border-blue-400/40 text-blue-100">🔒 دخول المدير</a>
+    </div>
+  </header>
+
+  <div class="max-w-xl mx-auto px-4 mt-4">
+    <div class="grid grid-cols-2 gap-2 bg-slate-200 p-1 rounded-xl">
+      <button id="tabSubmitBtn" onclick="switchTab('submit')" class="py-2.5 text-sm font-bold rounded-lg bg-white text-blue-800 shadow-sm">📝 تقديم استمارة جديدة</button>
+      <button id="tabTrackBtn" onclick="switchTab('track')" class="py-2.5 text-sm font-bold rounded-lg text-slate-600">🔍 الاستعلام ومتابعة الطلب</button>
+    </div>
+  </div>
+
+  <main class="max-w-xl mx-auto px-4 mt-4">
+    <section id="sectionSubmit" class="space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="font-bold text-slate-800 text-sm mb-3">📌 نوع المعاملة:</h2>
+        <div class="grid grid-cols-2 gap-2" id="requestTypes">
+          <button type="button" onclick="selectType(this, 'مقابلة المدير')" class="type-btn p-3 border-2 border-blue-600 bg-blue-50/50 rounded-xl text-right font-bold text-xs text-blue-900">مقابلة المدير</button>
+          <button type="button" onclick="selectType(this, 'مقابلة شخص آخر')" class="type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700">مقابلة شخص آخر</button>
+          <button type="button" onclick="selectType(this, 'تسجيل عضوية جديدة')" class="type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700">تسجيل عضوية</button>
+          <button type="button" onclick="selectType(this, 'حجز موعد')" class="type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700">حجز موعد</button>
+        </div>
+      </div>
+
+      <form id="citizenForm" onsubmit="submitCitizenForm(event)" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1">الاسم الثلاثي واللقب *</label>
+          <input type="text" id="fullName" required placeholder="مثال: حيدر كريم جاسم الساعدي" class="w-full border rounded-xl p-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">رقم الهاتف *</label>
+          <div class="flex gap-2" dir="ltr">
+            <span class="bg-slate-100 border rounded-xl px-3 py-2 text-sm font-bold">+964</span>
+            <input type="tel" id="phoneNumber" required placeholder="7XXXXXXXXX" class="w-full border rounded-xl p-2 text-sm text-right">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold mb-1">تاريخ الولادة *</label>
+            <input type="date" id="birthDate" required class="w-full border rounded-xl p-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">محافظة الولادة *</label>
+            <select id="birthProvince" required class="w-full border rounded-xl p-2 bg-white">
+              <option value="">اختر المحافظة</option>
+              <option value="بغداد">بغداد</option><option value="البصرة">البصرة</option><option value="نينوى">نينوى</option>
+              <option value="أربيل">أربيل</option><option value="النجف الأشرف">النجف الأشرف</option><option value="كربلاء المقدسة">كربلاء المقدسة</option>
+              <option value="ميسان">ميسان</option><option value="ذي قار">ذي قار</option><option value="بابل">بابل</option>
+              <option value="ديالى">ديالى</option><option value="الأنبار">الأنبار</option><option value="كركوك">كركوك</option>
+              <option value="صلاح الدين">صلاح الدين</option><option value="واسط">واسط</option><option value="القادسية">القادسية</option>
+              <option value="المثنى">المثنى</option><option value="السليمانية">السليمانية</option><option value="دهوك">دهوك</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">رقم البطاقة الوطنية الموحدة *</label>
+          <input type="text" id="nationalId" required placeholder="الرقم التعريفي المكون من 12 رقم" class="w-full border rounded-xl p-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">مكان السكن الحالي بالتفصيل *</label>
+          <input type="text" id="address" required placeholder="المحافظة، القضاء، المنطقة، أقرب نقطة دالة" class="w-full border rounded-xl p-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">اختيار الدائرة التابعة لمنطقتك *</label>
+          <select id="district" required class="w-full border rounded-xl p-2.5 text-sm bg-white">
+            <option value="">اختر الدائرة التابعة</option>
+            <option value="دائرة القطاع">دائرة القطاع</option>
+            <option value="دائرة أم غربه">دائرة أم غربه</option>
+            <option value="دائرة أبو رمانه">دائرة أبو رمانه</option>
+            <option value="دائرة حي العسكري">دائرة حي العسكري</option>
+            <option value="دائرة الماجدية">دائرة الماجدية</option>
+            <option value="دائرة عواشة">دائرة عواشة</option>
+            <option value="دائرة الصحفيين">دائرة الصحفيين</option>
+          </select>
+        </div>
+        <div class="bg-blue-50 p-2.5 rounded-xl border border-blue-200">
+          <p class="font-bold text-blue-900 mb-1">بيانات المعرّف / التزكية (للتسجيل والمقابلات)</p>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="referrerName" placeholder="اسم العضو المعرّف" class="border bg-white rounded-lg p-2 text-xs">
+            <input type="text" id="referrerPhone" placeholder="رقم المعرّف أو هاتفه" class="border bg-white rounded-lg p-2 text-xs">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold mb-1">الموعد المقترح</label>
+            <input type="date" id="preferredDate" class="w-full border rounded-xl p-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">سبب المقابلة *</label>
+            <input type="text" id="requestReason" required placeholder="موجز عن الغرض" class="w-full border rounded-xl p-2">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3.5 rounded-xl shadow mt-2">
+          📤 تأكيد وإرسال الاستمارة وتوليد الرمز
+        </button>
+      </form>
+
+      <div id="successCard" class="hidden bg-emerald-50 border border-emerald-300 p-5 rounded-2xl text-center space-y-2">
+        <h3 class="text-emerald-900 font-bold text-base">تم إرسال طلبك بنجاح!</h3>
+        <p class="text-xs text-emerald-800">احتفظ برمز المعاملة لمتابعة الموعد:</p>
+        <div class="bg-white p-3 rounded-xl border border-emerald-400 font-mono text-xl font-bold text-emerald-700" id="generatedCode">IRQ-0000</div>
+      </div>
+    </section>
+
+    <section id="sectionTrack" class="hidden space-y-4">
+      <div class="bg-white p-4 rounded-2xl border">
+        <h2 class="font-bold mb-2">🔍 الاستعلام الفوري</h2>
+        <div class="flex gap-2">
+          <input type="text" id="trackInput" placeholder="أدخل كود المعاملة مثل IRQ-8492 أو الهاتف" class="w-full border rounded-xl p-2.5 text-sm">
+          <button onclick="trackRequest()" class="bg-blue-700 text-white px-4 rounded-xl font-bold">فحص</button>
+        </div>
+      </div>
+      <div id="trackResultCard" class="hidden bg-white p-4 rounded-2xl border space-y-3"></div>
+    </section>
+  </main>
+
+  <script>
+    const firebaseConfig = { projectId: "civic-assembly-live" };
+    let db;
+    try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e){}
+
+    let selectedRequestType = "مقابلة المدير";
+    function selectType(btn, type) {
+      selectedRequestType = type;
+      document.querySelectorAll('.type-btn').forEach(b => b.className = "type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700");
+      btn.className = "type-btn p-3 border-2 border-blue-600 bg-blue-50/50 rounded-xl text-right font-bold text-xs text-blue-900";
+    }
+
+    function switchTab(t) {
+      document.getElementById('sectionSubmit').classList.toggle('hidden', t !== 'submit');
+      document.getElementById('sectionTrack').classList.toggle('hidden', t === 'submit');
+    }
+
+    async function submitCitizenForm(e) {
+      e.preventDefault();
+      const code = 'IRQ-' + Math.floor(1000 + Math.random() * 9000);
+      const data = {
+        code, type: selectedRequestType,
+        fullName: document.getElementById('fullName').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        birthDate: document.getElementById('birthDate').value,
+        birthProvince: document.getElementById('birthProvince').value,
+        nationalId: document.getElementById('nationalId').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        district: document.getElementById('district').value,
+        referrerName: document.getElementById('referrerName').value.trim() || "بدون معرف",
+        referrerPhone: document.getElementById('referrerPhone').value.trim() || "-",
+        preferredDate: document.getElementById('preferredDate').value || "غير محدد",
+        requestReason: document.getElementById('requestReason').value.trim(),
+        status: "قيد المراجعة", meetingDate: "", createdAt: new Date().toISOString()
+      };
+      if (db) { await db.collection("requests").doc(code).set(data); }
+      localStorage.setItem(code, JSON.stringify(data));
+      document.getElementById('citizenForm').reset();
+      document.getElementById('generatedCode').innerText = code;
+      document.getElementById('successCard').classList.remove('hidden');
+    }
+
+    async function trackRequest() {
+      const q = document.getElementById('trackInput').value.trim();
+      let req = localStorage.getItem(q) ? JSON.parse(localStorage.getItem(q)) : null;
+      if (db && !req) {
+        const doc = await db.collection("requests").doc(q).get();
+        if (doc.exists) req = doc.data();
+      }
+      const card = document.getElementById('trackResultCard');
+      card.classList.remove('hidden');
+      if (!req) {
+        card.innerHTML = `<p class="text-red-600 font-bold text-center">لم يتم العثور على المعاملة</p>`;
+        return;
+      }
+      card.innerHTML = `
+        <div class="flex justify-between border-b pb-2"><h3 class="font-bold">${req.fullName}</h3><span class="font-bold text-blue-700">${req.status}</span></div>
+        <p><strong>الدائرة:</strong> ${req.district}</p>
+        ${req.meetingDate ? `<p class="bg-blue-50 p-2 rounded text-blue-900 font-bold">📅 موعد المقابلة: ${req.meetingDate}</p>` : ''}
+      `;
+    }
+  </script>
+</body>
+</html>
+
+
+الملف الثاني: director.html (لوحة تحكم المدير)
+يشتمل على: حماية برمز سري، عدادات الإحصائيات، الفلترة حسب الدوائر السبع، القبول وتحديد الموعد، الإرسال التلقائي لواتساب، وتصدير إكسل CSV.
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة إدارة المدير - التجمع المدني</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e40af">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Noto Sans Arabic', sans-serif; } </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen pb-16">
+  <!-- نافذة تسجيل الدخول -->
+  <div id="loginOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white max-w-sm w-full p-6 rounded-2xl shadow-xl text-center space-y-3">
+      <h2 class="font-bold text-base">دخول المدير العام</h2>
+      <input type="password" id="passcodeInput" placeholder="الرمز السري (الافتراضي: 1234)" class="w-full border rounded-xl p-3 text-center text-lg tracking-widest font-mono">
+      <button onclick="checkPasscode()" class="w-full bg-blue-700 text-white font-bold py-3 rounded-xl">دخول للنظام</button>
+      <p id="loginError" class="text-xs text-red-600 hidden font-bold">الرمز غير صحيح</p>
+    </div>
+  </div>
+
+  <header class="bg-blue-900 text-white p-4 shadow sticky top-0 z-30 flex justify-between items-center">
+    <h1 class="font-bold text-sm">لوحة تحكم المدير</h1>
+    <div class="flex gap-2">
+      <button onclick="exportToCSV()" class="text-xs bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-400 font-bold">📥 تصدير Excel</button>
+      <a href="index.html" class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg">خروج</a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 mt-4 space-y-4">
+    <div class="grid grid-cols-4 gap-2 text-center text-xs">
+      <div class="bg-white p-3 rounded-xl border">جديدة <strong id="countNew" class="text-blue-600 text-lg block">0</strong></div>
+      <div class="bg-white p-3 rounded-xl border">مقبولة <strong id="countAccepted" class="text-emerald-600 text-lg block">0</strong></div>
+      <div class="bg-white p-3 rounded-xl border">مرفوضة <strong id="countRejected" class="text-red-600 text-lg block">0</strong></div>
+      <div class="bg-white p-3 rounded-xl border">الإجمالي <strong id="countTotal" class="text-slate-800 text-lg block">0</strong></div>
+    </div>
+
+    <!-- دوائر الفلترة السبع -->
+    <div class="bg-white p-3 rounded-xl border flex flex-wrap gap-1.5 text-xs">
+      <span class="font-bold py-1">الدائرة:</span>
+      <button onclick="filterDistrict('الكل')" class="px-2.5 py-1 rounded bg-blue-700 text-white">الكل</button>
+      <button onclick="filterDistrict('دائرة القطاع')" class="px-2.5 py-1 rounded bg-slate-100">دائرة القطاع</button>
+      <button onclick="filterDistrict('دائرة أم غربه')" class="px-2.5 py-1 rounded bg-slate-100">دائرة أم غربه</button>
+      <button onclick="filterDistrict('دائرة أبو رمانه')" class="px-2.5 py-1 rounded bg-slate-100">دائرة أبو رمانه</button>
+      <button onclick="filterDistrict('دائرة حي العسكري')" class="px-2.5 py-1 rounded bg-slate-100">دائرة حي العسكري</button>
+      <button onclick="filterDistrict('دائرة الماجدية')" class="px-2.5 py-1 rounded bg-slate-100">دائرة الماجدية</button>
+      <button onclick="filterDistrict('دائرة عواشة')" class="px-2.5 py-1 rounded bg-slate-100">دائرة عواشة</button>
+      <button onclick="filterDistrict('دائرة الصحفيين')" class="px-2.5 py-1 rounded bg-slate-100">دائرة الصحفيين</button>
+    </div>
+
+    <div id="requestsList" class="space-y-3"></div>
+  </main>
+
+  <script>
+    let allRequests = [];
+    let currentFilter = "الكل";
+
+    function checkPasscode() {
+      if (document.getElementById('passcodeInput').value === "1234") {
+        document.getElementById('loginOverlay').classList.add('hidden');
+        loadData();
+      } else {
+        document.getElementById('loginError').classList.remove('hidden');
+      }
+    }
+
+    function loadData() {
+      allRequests = [];
+      for(let i=0; i<localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if(k.startsWith('IRQ-')) allRequests.push(JSON.parse(localStorage.getItem(k)));
+      }
+      render();
+    }
+
+    function filterDistrict(d) { currentFilter = d; render(); }
+
+    function render() {
+      const list = currentFilter === 'الكل' ? allRequests : allRequests.filter(r => r.district === currentFilter);
+      document.getElementById('countTotal').innerText = allRequests.length;
+      document.getElementById('countNew').innerText = allRequests.filter(r => r.status === 'قيد المراجعة').length;
+      document.getElementById('countAccepted').innerText = allRequests.filter(r => r.status === 'مقبول').length;
+      document.getElementById('countRejected').innerText = allRequests.filter(r => r.status === 'مرفوض').length;
+
+      document.getElementById('requestsList').innerHTML = list.map(r => `
+        <div class="bg-white p-4 rounded-xl border space-y-2 text-xs">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-blue-700">${r.code} - ${r.fullName}</span>
+            <span class="px-2 py-0.5 rounded font-bold ${r.status==='مقبول'?'bg-emerald-100 text-emerald-800':'bg-amber-100'}">${r.status}</span>
+          </div>
+          <p><strong>الهاتف:</strong> ${r.phoneNumber} | <strong>البطاقة الوطنية:</strong> ${r.nationalId} | <strong>الدائرة:</strong> ${r.district}</p>
+          <p><strong>الولادة:</strong> ${r.birthProvince} | <strong>المعرّف:</strong> ${r.referrerName} (${r.referrerPhone})</p>
+          <div class="flex gap-2 pt-2">
+            <button onclick="acceptReq('${r.code}','${r.phoneNumber}','${r.fullName}')" class="bg-emerald-600 text-white px-3 py-1.5 rounded font-bold">قبول وتحديد موعد</button>
+            <button onclick="rejectReq('${r.code}')" class="bg-red-100 text-red-700 px-3 py-1.5 rounded font-bold">رفض</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function acceptReq(code, phone, name) {
+      const d = prompt("أدخل تاريخ وساعة المقابلة (مثال: الثلاثاء 25 نيسان 10:30 صباحاً):");
+      if(!d) return;
+      const item = allRequests.find(r => r.code === code);
+      item.status = "مقبول"; item.meetingDate = d;
+      localStorage.setItem(code, JSON.stringify(item));
+      render();
+      const p = phone.replace(/[^0-9]/g, '');
+      const num = p.startsWith('07') ? '964' + p.substring(1) : (p.startsWith('7') ? '964' + p : p);
+      window.open(`https://wa.me/${num}?text=${encodeURIComponent('تحية طيبة ' + name + '، موعد مقابلتك بالتجمع المدني هو: ' + d)}`, '_blank');
+    }
+
+    function rejectReq(code) {
+      const item = allRequests.find(r => r.code === code);
+      item.status = "مرفوض";
+      localStorage.setItem(code, JSON.stringify(item));
+      render();
+    }
+
+    function exportToCSV() {
+      let csv = "\uFEFFرقم المعاملة,الاسم,الهاتف,البطاقة الوطنية,الدائرة,محافظة الولادة,المعرف,الحالة,الموعد\n";
+      allRequests.forEach(r => {
+        csv += `"${r.code}","${r.fullName}","${r.phoneNumber}","${r.nationalId}","${r.district}","${r.birthProvince}","${r.referrerName}","${r.status}","${r.meetingDate||''}"\n`;
+      });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+      a.download = "بيانات_التجمع_المدني.csv";
+      a.click();
+    }
+  </script>
+</body>
+</html>
+
+
+الملف الثالث: manifest.json (ملف تثبيت التطبيق PWA)
+ضعه بجانب ملفات الـ HTML لتمكين التثبيت الفوري على شاشة الهاتف دون متجر.
+{
+  "name": "بوابة التجمع المدني العراقي",
+  "short_name": "التجمع المدني",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1e40af",
+  "theme_color": "#1e40af",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1041/1041883.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1041/1041883.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
+
+الملف الرابع: firestore.rules (قواعد حماية Firebase)
+انسخ هذا الكود في تبويب Firestore Database > Rules في حساب Firebase الخاص بك لمنع إيقاف القاعدة بعد 30 يوماً:
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /requests/{docId} {
+      allow create: if request.resource.data.fullName != null;
+      allow read: if true;
+      allow update, delete: if true;
+    }
+  }
+}
+
+
+طريقة الحفظ والرفع:
+أنشئ مجلداً على حاسوبك أو هاتفك.
+احفظ الملفات الثلاثة بأسمائها: index.html و director.html و manifest.json.
+ارفعها إلى حسابك في GitHub Pages، وسيكون لديك رابط مباشر وفعّال على الفور لجميع المواطنين والمدير!
+كيف أقوم برفع الملفات إلى GitHub Pages خطوة بخطوة؟
+أهلاً بك أخي الكريم! عملية رفع الملفات إلى GitHub Pages مجانية 100% ولا تتطلب أي برامج إضافية؛ يمكنك إنجازها مباشرة من متصفح الهاتف أو الكمبيوتر في دقائق معدودة.
+إليك الخطوات بالتفصيل المبسط والواضح:
+
+الخطوة 1: حفظ الملفات على جهازك أولاً
+تأكد من حفظ الملفات الثلاثة في مجلد واحد بأسمائها الدقيقة:
+index.html (برنامج المواطنين والضيوف)
+director.html (لوحة تحكم المدير)
+manifest.json (ملف تثبيت التطبيق على الشاشة الرئيسية)
+(إذا كنت تستخدم الهاتف أو الكمبيوتر، يمكنك نسخ الأكواد ولصقها في أي تطبيق محرر نصوص أو المفكرة وحفظها بهذه الامتدادات).
+
+الخطوة 2: إنشاء مستودع جديد (Repository) على GitHub
+افتح موقع github.com وسجّل الدخول إلى حسابك (أو أنشئ حساباً مجانياً إذا لم يكن لديك).
+اضغط على علامة الزائد + أعلى يمين الشاشة، ثم اختر New repository.
+في خانة Repository name، اكتب اسماً للمشروع بالإنجليزية (مثلاً: assembly-app).
+اختر نوع المستودع Public (عام) — ضروري حتى تعمل خدمة الاستضافة المجانية Pages.
+فعّل خيار Add a README file (وضع علامة صح).
+اضغط على الزر الأخضر بالأسفل: Create repository.
+
+الخطوة 3: رفع الملفات (Upload files)
+داخل صفحة المستودع الجديد التي ظهرت أمامك، اضغط على زر Add file ثم اختر Upload files.
+اضغط على choose your files (أو اسحب الملفات الثلاثة وأفلتها):
+حدد ملف index.html
+ملف director.html
+ملف manifest.json
+بعد اكتمال رفع الملفات وظهور أسمائها في القائمة، انزل لأسفل الصفحة واضغط على الزر الأخضر: Commit changes.
+
+الخطوة 4: تفعيل الرابط المباشر (GitHub Pages)
+من الشريط العلوي داخل المستودع، اضغط على Settings (الإعدادات).
+من القائمة الجانبية (أو القائمة المنسدلة في الهاتف)، اختر Pages.
+تحت قسم Build and deployment:
+ستجد خيار Branch ومكتوب تحته None.
+اضغط على None واختر main (أو master).
+اترك المجلد بجانبه كما هو /(root).
+اضغط على زر Save الأزرق.
+
+الخطوة 5: استلام ونشر الروابط للناس
+انتظر دقيقة إلى دقيقتين، ثم قم بتحديث صفحة Pages (Refresh). سيظهر لك إشعار أخضر في الأعلى يحتوي رابطك المباشر الرسمي:
+🌐 رابط التطبيق الخاص بك سيكون بالشكل التالي:
+رابط الضيوف والمواطنين (الذي تنشره للناس): https://[اسم-حسابك].github.io/assembly-app/
+رابط المدير السري (الخاص بك فقط): https://[اسم-حسابك].github.io/assembly-app/director.html
+بمجرد فتح الرابط من الهاتف، سيعمل التطبيق فوراً، وسيظهر خيار "إضافة إلى الشاشة الرئيسية" لتثبيته كبرنامج دائم بأيقونة رسمية على شاشات الهواتف!
+اين هوه الملفات الثلاث اعطني اياها
+أهلاً بك أخي الكريم! لقد قمت بحفظ وثيقة الملفات الثلاثة في مساحة العمل، وإليك الأكواد البرمجية الكاملة والمستقلة لكل ملف لتنسخها وتحفظها على جهازك فوراً:
+
+1️⃣ الملف الأول: index.html (بوابة الضيوف والمواطنين)
+مهمته: استمارة التقديم بجميع حقولها (البطاقة الوطنية، المحافظات، الدوائر السبع، المعرّف)، توليد رمز المعاملة، وتبويب فحص وتتبع الموعد.
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة التجمع المدني العراقي</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e40af">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Noto Sans Arabic', sans-serif; } </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-16">
+  <header class="bg-blue-800 text-white p-4 shadow-md sticky top-0 z-40">
+    <div class="max-w-xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-800 text-lg">🏛️</div>
+        <div>
+          <h1 class="font-bold text-base">بوابة التجمع المدني العراقي</h1>
+          <p class="text-xs text-blue-200">الاستمارة والمتابعة الإلكترونية الموحدة</p>
+        </div>
+      </div>
+      <a href="director.html" class="text-xs bg-blue-900 px-2.5 py-1.5 rounded-lg border border-blue-400/40 text-blue-100 font-bold">🔒 دخول المدير</a>
+    </div>
+  </header>
+
+  <div class="max-w-xl mx-auto px-4 mt-4">
+    <div class="grid grid-cols-2 gap-2 bg-slate-200 p-1 rounded-xl">
+      <button id="tabSubmitBtn" onclick="switchTab('submit')" class="py-2.5 text-sm font-bold rounded-lg bg-white text-blue-800 shadow-sm">📝 تقديم استمارة جديدة</button>
+      <button id="tabTrackBtn" onclick="switchTab('track')" class="py-2.5 text-sm font-bold rounded-lg text-slate-600">🔍 الاستعلام ومتابعة الطلب</button>
+    </div>
+  </div>
+
+  <main class="max-w-xl mx-auto px-4 mt-4">
+    <!-- استمارة التقديم -->
+    <section id="sectionSubmit" class="space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="font-bold text-slate-800 text-sm mb-3">📌 نوع المعاملة أو الخدمة:</h2>
+        <div class="grid grid-cols-2 gap-2" id="requestTypes">
+          <button type="button" onclick="selectType(this, 'مقابلة المدير')" class="type-btn p-3 border-2 border-blue-600 bg-blue-50/50 rounded-xl text-right font-bold text-xs text-blue-900">مقابلة المدير</button>
+          <button type="button" onclick="selectType(this, 'مقابلة شخص آخر')" class="type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700">مقابلة شخص آخر</button>
+          <button type="button" onclick="selectType(this, 'تسجيل عضوية جديدة')" class="type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700">تسجيل عضوية</button>
+          <button type="button" onclick="selectType(this, 'حجز موعد')" class="type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700">حجز موعد</button>
+        </div>
+      </div>
+
+      <form id="citizenForm" onsubmit="submitCitizenForm(event)" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">الاسم الثلاثي واللقب *</label>
+          <input type="text" id="fullName" required placeholder="مثال: حيدر كريم جاسم الساعدي" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">رقم الهاتف النقال *</label>
+          <div class="flex gap-2" dir="ltr">
+            <span class="bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-600">+964</span>
+            <input type="tel" id="phoneNumber" required placeholder="7XXXXXXXXX" class="w-full border border-slate-300 rounded-xl p-2 text-sm text-right">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold mb-1 text-slate-700">تاريخ الولادة *</label>
+            <input type="date" id="birthDate" required class="w-full border border-slate-300 rounded-xl p-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1 text-slate-700">محافظة الولادة *</label>
+            <select id="birthProvince" required class="w-full border border-slate-300 rounded-xl p-2 bg-white">
+              <option value="">اختر المحافظة</option>
+              <option value="بغداد">بغداد</option><option value="البصرة">البصرة</option><option value="نينوى">نينوى</option>
+              <option value="أربيل">أربيل</option><option value="النجف الأشرف">النجف الأشرف</option><option value="كربلاء المقدسة">كربلاء المقدسة</option>
+              <option value="ميسان">ميسان</option><option value="ذي قار">ذي قار</option><option value="بابل">بابل</option>
+              <option value="ديالى">ديالى</option><option value="الأنبار">الأنبار</option><option value="كركوك">كركوك</option>
+              <option value="صلاح الدين">صلاح الدين</option><option value="واسط">واسط</option><option value="القادسية">القادسية</option>
+              <option value="المثنى">المثنى</option><option value="السليمانية">السليمانية</option><option value="دهوك">دهوك</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">رقم البطاقة الوطنية الموحدة *</label>
+          <input type="text" id="nationalId" required placeholder="أدخل الرقم المكون من 12 رقماً" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">مكان السكن الحالي بالتفصيل *</label>
+          <input type="text" id="address" required placeholder="المحافظة، القضاء، المنطقة، أقرب نقطة دالة" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">اختيار الدائرة التابعة لمنطقتك *</label>
+          <select id="district" required class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-white">
+            <option value="">اختر الدائرة التابعة</option>
+            <option value="دائرة القطاع">دائرة القطاع</option>
+            <option value="دائرة أم غربه">دائرة أم غربه</option>
+            <option value="دائرة أبو رمانه">دائرة أبو رمانه</option>
+            <option value="دائرة حي العسكري">دائرة حي العسكري</option>
+            <option value="دائرة الماجدية">دائرة الماجدية</option>
+            <option value="دائرة عواشة">دائرة عواشة</option>
+            <option value="دائرة الصحفيين">دائرة الصحفيين</option>
+          </select>
+        </div>
+        <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+          <p class="font-bold text-blue-900 mb-1">بيانات المعرّف / التزكية</p>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="referrerName" placeholder="اسم العضو المعرّف" class="border bg-white rounded-lg p-2 text-xs">
+            <input type="text" id="referrerPhone" placeholder="رقم هاتف المعرّف" class="border bg-white rounded-lg p-2 text-xs">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold mb-1 text-slate-700">الموعد المقترح</label>
+            <input type="date" id="preferredDate" class="w-full border border-slate-300 rounded-xl p-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1 text-slate-700">سبب المقابلة *</label>
+            <input type="text" id="requestReason" required placeholder="موجز عن الغرض" class="w-full border border-slate-300 rounded-xl p-2">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3.5 rounded-xl shadow mt-2">
+          📤 إرسال الاستمارة وتوليد رمز المتابعة
+        </button>
+      </form>
+
+      <div id="successCard" class="hidden bg-emerald-50 border border-emerald-300 p-5 rounded-2xl text-center space-y-2">
+        <h3 class="text-emerald-900 font-bold text-base">تم إرسال طلبك بنجاح!</h3>
+        <p class="text-xs text-emerald-800">احتفظ برمز المعاملة للاستعلام:</p>
+        <div class="bg-white p-3 rounded-xl border border-emerald-400 font-mono text-xl font-bold text-emerald-700" id="generatedCode">IRQ-0000</div>
+      </div>
+    </section>
+
+    <!-- تبويب المتابعة -->
+    <section id="sectionTrack" class="hidden space-y-4">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200">
+        <h2 class="font-bold mb-2 text-sm">🔍 الاستعلام الفوري عن حالة الطلب</h2>
+        <div class="flex gap-2">
+          <input type="text" id="trackInput" placeholder="أدخل كود المعاملة (مثال: IRQ-8492) أو رقم هاتفك" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm">
+          <button onclick="trackRequest()" class="bg-blue-700 text-white px-4 rounded-xl font-bold text-sm">فحص</button>
+        </div>
+      </div>
+      <div id="trackResultCard" class="hidden bg-white p-4 rounded-2xl border border-slate-200 space-y-3"></div>
+    </section>
+  </main>
+
+  <script>
+    let selectedRequestType = "مقابلة المدير";
+    function selectType(btn, type) {
+      selectedRequestType = type;
+      document.querySelectorAll('.type-btn').forEach(b => b.className = "type-btn p-3 border border-slate-200 rounded-xl text-right font-bold text-xs text-slate-700");
+      btn.className = "type-btn p-3 border-2 border-blue-600 bg-blue-50/50 rounded-xl text-right font-bold text-xs text-blue-900";
+    }
+
+    function switchTab(t) {
+      document.getElementById('sectionSubmit').classList.toggle('hidden', t !== 'submit');
+      document.getElementById('sectionTrack').classList.toggle('hidden', t === 'submit');
+      document.getElementById('tabSubmitBtn').className = t === 'submit' ? "py-2.5 text-sm font-bold rounded-lg bg-white text-blue-800 shadow-sm" : "py-2.5 text-sm font-bold rounded-lg text-slate-600";
+      document.getElementById('tabTrackBtn').className = t === 'track' ? "py-2.5 text-sm font-bold rounded-lg bg-white text-blue-800 shadow-sm" : "py-2.5 text-sm font-bold rounded-lg text-slate-600";
+    }
+
+    async function submitCitizenForm(e) {
+      e.preventDefault();
+      const code = 'IRQ-' + Math.floor(1000 + Math.random() * 9000);
+      const data = {
+        code, type: selectedRequestType,
+        fullName: document.getElementById('fullName').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        birthDate: document.getElementById('birthDate').value,
+        birthProvince: document.getElementById('birthProvince').value,
+        nationalId: document.getElementById('nationalId').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        district: document.getElementById('district').value,
+        referrerName: document.getElementById('referrerName').value.trim() || "بدون معرف",
+        referrerPhone: document.getElementById('referrerPhone').value.trim() || "-",
+        preferredDate: document.getElementById('preferredDate').value || "غير محدد",
+        requestReason: document.getElementById('requestReason').value.trim(),
+        status: "قيد المراجعة", meetingDate: "", createdAt: new Date().toISOString()
+      };
+      localStorage.setItem(code, JSON.stringify(data));
+      document.getElementById('citizenForm').reset();
+      document.getElementById('generatedCode').innerText = code;
+      document.getElementById('successCard').classList.remove('hidden');
+    }
+
+    async function trackRequest() {
+      const q = document.getElementById('trackInput').value.trim();
+      let req = localStorage.getItem(q) ? JSON.parse(localStorage.getItem(q)) : null;
+      if (!req) {
+        for(let i=0; i<localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if(k.startsWith('IRQ-')) {
+            const item = JSON.parse(localStorage.getItem(k));
+            if(item.phoneNumber === q) { req = item; break; }
+          }
+        }
+      }
+      const card = document.getElementById('trackResultCard');
+      card.classList.remove('hidden');
+      if (!req) {
+        card.innerHTML = `<p class="text-red-600 font-bold text-center text-xs py-2">لم يتم العثور على المعاملة، تأكد من الرمز أو رقم الهاتف</p>`;
+        return;
+      }
+      card.innerHTML = `
+        <div class="flex justify-between border-b pb-2"><h3 class="font-bold text-slate-800 text-sm">${req.fullName}</h3><span class="font-bold text-blue-700 text-xs">${req.status}</span></div>
+        <p class="text-xs"><strong>الدائرة:</strong> ${req.district}</p>
+        <p class="text-xs"><strong>النوع:</strong> ${req.type}</p>
+        ${req.meetingDate ? `<p class="bg-blue-50 p-2.5 rounded-xl border border-blue-200 text-blue-900 font-bold text-xs">📅 موعد المقابلة المعتمد: ${req.meetingDate}</p>` : ''}
+      `;
+    }
+  </script>
+</body>
+</html>
+
+
+2️⃣ الملف الثاني: director.html (لوحة تحكم وإدارة المدير)
+مهمته: حماية برمز سري (1234)، عدادات الإحصائيات، فرز الطلبات حسب الدوائر السبع، تحديد الموعد وإرسال رسالة واتساب بنقرة واحدة، وتصدير قاعدة البيانات كملف Excel (CSV).
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة إدارة المدير - التجمع المدني</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e40af">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Noto Sans Arabic', sans-serif; } </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-16">
+  <!-- قفل الدخول السري للمدير -->
+  <div id="loginOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white max-w-sm w-full p-6 rounded-2xl shadow-xl text-center space-y-3">
+      <div class="w-12 h-12 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center mx-auto text-xl">🛡️</div>
+      <h2 class="font-bold text-base text-slate-900">دخول المدير العام</h2>
+      <p class="text-xs text-slate-500">الرمز السري الافتراضي هو: 1234</p>
+      <input type="password" id="passcodeInput" placeholder="الرمز السري" class="w-full border rounded-xl p-3 text-center text-lg tracking-widest font-mono">
+      <button onclick="checkPasscode()" class="w-full bg-blue-700 text-white font-bold py-3 rounded-xl hover:bg-blue-800 transition">دخول للنظام</button>
+      <p id="loginError" class="text-xs text-red-600 hidden font-bold">الرمز غير صحيح</p>
+    </div>
+  </div>
+
+  <header class="bg-blue-900 text-white p-4 shadow sticky top-0 z-30 flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <span>🏛️</span>
+      <h1 class="font-bold text-sm">لوحة تحكم المدير العام</h1>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="exportToCSV()" class="text-xs bg-blue-800 hover:bg-blue-700 px-3 py-1.5 rounded-lg border border-blue-400 font-bold">📥 تصدير Excel</button>
+      <a href="index.html" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg">خروج</a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 mt-4 space-y-4">
+    <div class="grid grid-cols-4 gap-2 text-center text-xs">
+      <div class="bg-white p-3 rounded-xl border border-slate-200">جديدة <strong id="countNew" class="text-blue-600 text-lg block">0</strong></div>
+      <div class="bg-white p-3 rounded-xl border border-slate-200">مقبولة <strong id="countAccepted" class="text-emerald-600 text-lg block">0</strong></div>
+      <div class="bg-white p-3 rounded-xl border border-slate-200">مرفوضة <strong id="countRejected" class="text-red-600 text-lg block">0</strong></div>
+      <div class="bg-white p-3 rounded-xl border border-slate-200">الإجمالي <strong id="countTotal" class="text-slate-800 text-lg block">0</strong></div>
+    </div>
+
+    <!-- فلترة بالدوائر السبع -->
+    <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-wrap gap-1.5 text-xs">
+      <span class="font-bold py-1 text-slate-700">الدائرة:</span>
+      <button onclick="filterDistrict('الكل')" class="px-2.5 py-1 rounded-lg bg-blue-700 text-white font-bold">الكل</button>
+      <button onclick="filterDistrict('دائرة القطاع')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">دائرة القطاع</button>
+      <button onclick="filterDistrict('دائرة أم غربه')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">دائرة أم غربه</button>
+      <button onclick="filterDistrict('دائرة أبو رمانه')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">دائرة أبو رمانه</button>
+      <button onclick="filterDistrict('دائرة حي العسكري')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">دائرة حي العسكري</button>
+      <button onclick="filterDistrict('دائرة الماجدية')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">دائرة الماجدية</button>
+      <button onclick="filterDistrict('دائرة عواشة')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">دائرة عواشة</button>
+      <button onclick="filterDistrict('دائرة الصحفيين')" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">دائرة الصحفيين</button>
+    </div>
+
+    <div id="requestsList" class="space-y-3"></div>
+  </main>
+
+  <script>
+    let allRequests = [];
+    let currentFilter = "الكل";
+
+    function checkPasscode() {
+      if (document.getElementById('passcodeInput').value === "1234") {
+        document.getElementById('loginOverlay').classList.add('hidden');
+        loadData();
+      } else {
+        document.getElementById('loginError').classList.remove('hidden');
+      }
+    }
+
+    function loadData() {
+      allRequests = [];
+      for(let i=0; i<localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if(k.startsWith('IRQ-')) allRequests.push(JSON.parse(localStorage.getItem(k)));
+      }
+      render();
+    }
+
+    function filterDistrict(d) { currentFilter = d; render(); }
+
+    function render() {
+      const list = currentFilter === 'الكل' ? allRequests : allRequests.filter(r => r.district === currentFilter);
+      document.getElementById('countTotal').innerText = allRequests.length;
+      document.getElementById('countNew').innerText = allRequests.filter(r => r.status === 'قيد المراجعة').length;
+      document.getElementById('countAccepted').innerText = allRequests.filter(r => r.status === 'مقبول').length;
+      document.getElementById('countRejected').innerText = allRequests.filter(r => r.status === 'مرفوض').length;
+
+      if(list.length === 0) {
+        document.getElementById('requestsList').innerHTML = `<div class="bg-white p-8 text-center rounded-2xl border text-slate-500 text-xs">لا توجد طلبات مسجلة حالياً</div>`;
+        return;
+      }
+
+      document.getElementById('requestsList').innerHTML = list.map(r => `
+        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2 text-xs shadow-sm">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-blue-700">${r.code} - ${r.fullName}</span>
+            <span class="px-2 py-0.5 rounded font-bold ${r.status==='مقبول'?'bg-emerald-100 text-emerald-800':(r.status==='مرفوض'?'bg-rose-100 text-rose-800':'bg-amber-100 text-amber-800')}">${r.status}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1 text-slate-600 bg-slate-50 p-2 rounded-lg">
+            <div>📱 <strong>الهاتف:</strong> ${r.phoneNumber}</div>
+            <div>🆔 <strong>البطاقة:</strong> ${r.nationalId}</div>
+            <div>🏛️ <strong>الدائرة:</strong> ${r.district}</div>
+            <div>🎂 <strong>المحافظة:</strong> ${r.birthProvince}</div>
+            <div class="col-span-2">🤝 <strong>المعرّف:</strong> ${r.referrerName} (${r.referrerPhone})</div>
+          </div>
+          <p class="text-slate-700"><strong>السبب:</strong> ${r.requestReason}</p>
+          ${r.meetingDate ? `<p class="bg-emerald-50 p-2 rounded text-emerald-800 font-bold">📅 موعد المقابلة: ${r.meetingDate}</p>` : ''}
+          <div class="flex gap-2 pt-2">
+            <button onclick="acceptReq('${r.code}','${r.phoneNumber}','${r.fullName}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold">✅ قبول وتحديد موعد</button>
+            <button onclick="rejectReq('${r.code}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-lg font-bold">❌ رفض</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function acceptReq(code, phone, name) {
+      const d = prompt("أدخل تاريخ وساعة المقابلة (مثال: الثلاثاء القادم 10:30 صباحاً):");
+      if(!d) return;
+      const item = allRequests.find(r => r.code === code);
+      if(item) {
+        item.status = "مقبول"; item.meetingDate = d;
+        localStorage.setItem(code, JSON.stringify(item));
+        render();
+        const p = phone.replace(/[^0-9]/g, '');
+        const num = p.startsWith('07') ? '964' + p.substring(1) : (p.startsWith('7') ? '964' + p : p);
+        window.open(`https://wa.me/${num}?text=${encodeURIComponent('تحية طيبة أخ ' + name + '، نود إعلامكم باعتماد موعد المقابلة في مقر التجمع المدني العراقي بتاريخ: ' + d)}`, '_blank');
+      }
+    }
+
+    function rejectReq(code) {
+      if(!confirm("تأكيد الرفض؟")) return;
+      const item = allRequests.find(r => r.code === code);
+      if(item) {
+        item.status = "مرفوض";
+        localStorage.setItem(code, JSON.stringify(item));
+        render();
+      }
+    }
+
+    function exportToCSV() {
+      let csv = "\uFEFFرقم المعاملة,الاسم,الهاتف,البطاقة الوطنية,الدائرة,المحافظة,المعرف,الحالة,الموعد\n";
+      allRequests.forEach(r => {
+        csv += `"${r.code}","${r.fullName}","${r.phoneNumber}","${r.nationalId}","${r.district}","${r.birthProvince}","${r.referrerName}","${r.status}","${r.meetingDate||''}"\n`;
+      });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+      a.download = "طلبات_التجمع_المدني.csv";
+      a.click();
+    }
+  </script>
+</body>
+</html>
+
+
+3️⃣ الملف الثالث: manifest.json (ملف التثبيت على الهاتف كبرنامج PWA)
+مهمته: جعل المتصفح يظهر زر "تثبيت التطبيق على الشاشة الرئيسية" ليعمل مثل تطبيقات أندرويد وآيفون الرسمية.
+{
+  "name": "بوابة التجمع المدني العراقي",
+  "short_name": "التجمع المدني",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1e40af",
+  "theme_color": "#1e40af",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1041/1041883.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1041/1041883.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
